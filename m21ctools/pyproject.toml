@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "m21ctools"
+version = "0.1.0"
+description = "Tools for cubed-sphere to lat-lon conversion"
+authors = [{name = "Furkan Goktas", email = "ftgoktas@gmail.com"}]
+dependencies = ["numpy", "xarray", "h5netcdf", "scipy", "matplotlib", "cartopy"]
+requires-python = ">=3.8"
+
+[tool.hatch.build.targets.wheel]
+packages = ["m21ctools"]
+
+[tool.hatch.build.targets.sdist]
+include = ["m21ctools"]

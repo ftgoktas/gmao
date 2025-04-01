@@ -8,6 +8,10 @@ import multiprocessing
 import icechunk
 from icechunk.xarray import to_icechunk
 import os
+import time
+
+start_time = time.time()
+print(start_time)
 
 def get_target_file(date_in_tar):
 
@@ -21,13 +25,15 @@ def get_target_file(date_in_tar):
         expid = 'e5303_m21c_jan08'
     else:
         strm = 'm21c_ens_strm3'
-        expid = 'e5303_m21c_jan18' 
+        expid = 'e5303_m21c_jan18'
     
     # Files 
     var_file_prefix = f"{expid}.bkg.eta"
     tar_file_prefix = f"{expid}.atmens_stat"
     
-    tar_file_template = f"mock_data/{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
+    # tar_file_template = f"mock_data/{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
+    tar_file_template = f"{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
+
     
     parentdir = date_in_tar.strftime(f"{tar_file_prefix}.%Y%m%d_%Hz")
 
@@ -57,6 +63,7 @@ def read_netcdf_from_tar_dask(tar_file, date_in_tar, target_file_name):
         return None
 
 
+# TODO: make faster, SEE HOW IT'S BEING CALLED
 def process_tar_file_2d3d(tar_file, date_in_tar, target_file_name, var3d_list, var2d_list):
     """
     Process a single tar file and return the lat-lon average for 3D variables,
@@ -68,7 +75,7 @@ def process_tar_file_2d3d(tar_file, date_in_tar, target_file_name, var3d_list, v
 
     latlon_avg_results = {}  # Dictionary to hold results for each variable
     time_coord = ds['time'].values[0]  # Get the time coordinate (assumes 'time' dimension is present)
-
+    print("start Process 3D variables: Average over latitude and longitude")
     # Process 3D variables: Average over latitude and longitude
     for var in var3d_list:
         if var in ds:
@@ -76,6 +83,7 @@ def process_tar_file_2d3d(tar_file, date_in_tar, target_file_name, var3d_list, v
             latlon_avg = spread_data.mean(dim=["lat", "lon"])
             latlon_avg_results[var] = latlon_avg
 
+    print("start Process 2D variables: Average over longitude only")
     # Process 2D variables: Average over longitude only
     for var in var2d_list:
         if var in ds:
@@ -86,7 +94,7 @@ def process_tar_file_2d3d(tar_file, date_in_tar, target_file_name, var3d_list, v
     return latlon_avg_results, time_coord
 
 
-def parallel_process_files_2d3d(start_date, end_date, var3d_list, var2d_list, skip_times=None, num_workers=1):
+def parallel_process_files_2d3d(start_date, end_date, var3d_list, var2d_list, skip_times=None, num_workers=30):
     current_date = start_date
     tar_files = []
 
@@ -118,6 +126,7 @@ def parallel_process_files_2d3d(start_date, end_date, var3d_list, var2d_list, sk
         tar_files.append((tar_file_path, current_date, target_file_name))
         current_date += timedelta(hours=6)
 
+    print("done!")
 
     if not tar_files:
         return {}
@@ -287,8 +296,10 @@ def get_existing_times(repo, var_name):
 if __name__ == '__main__':
     # Setting the time range to process
     # works with generate_mock_1.py
-    start_date = datetime(2010, 1, 1, 0) 
-    end_date = datetime(2010, 1, 2, 0) # next 24 hours (5 steps if 6-hourly)
+    # start_date = datetime(2010, 1, 1, 0) 
+    # end_date = datetime(2010, 1, 2, 0) # next 24 hours (5 steps if 6-hourly)
+    start_date = datetime(2018, 6, 1, 21)
+    end_date = datetime(2018, 9, 30, 21)
 
     # test first mock generation
     # works with generate_mock_1.py
@@ -308,8 +319,6 @@ if __name__ == '__main__':
     repo_path = "ensemble_store"
     storage = icechunk.local_filesystem_storage(repo_path)
 
-    repo_path = "ensemble_store"
-    storage = icechunk.local_filesystem_storage(repo_path)
 
     # Open the existing repository; if it doesn't exist, create a new one
     repo = icechunk.Repository.open_or_create(storage)
@@ -321,11 +330,12 @@ if __name__ == '__main__':
 
     # Process new data only
     combined_averages = parallel_process_files_2d3d(
-        start_date, end_date, var3d_list, var2d_list, skip_times=existing_times, num_workers=4
+        start_date, end_date, var3d_list, var2d_list, skip_times=existing_times, num_workers=50
     )
 
     if not combined_averages:
         print("No new time steps to process.")
+        
     else:
         commit_message = f"Processed data from {start_date} to {end_date}"
         save_to_icechunk(repo, combined_averages, commit_message)
@@ -333,7 +343,8 @@ if __name__ == '__main__':
         # Load full data and plot
         u_data = load_from_icechunk(repo, 'u')
         ps_data = load_from_icechunk(repo, 'ps')
-
+    
         plot_hovmoeller_3d(u_data, var='u')
         plot_hovmoeller_2d(ps_data, var='ps')
-
+        
+    print(time.time() - start_time, "seconds")

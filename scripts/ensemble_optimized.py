@@ -32,8 +32,7 @@ def get_target_file(date_in_tar):
     tar_file_prefix = f"{expid}.atmens_stat"
     
     # tar_file_template = f"mock_data/{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
-    tar_file_template = f"{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
-
+    tar_file_template = f"../data/{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
     
     parentdir = date_in_tar.strftime(f"{tar_file_prefix}.%Y%m%d_%Hz")
 

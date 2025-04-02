@@ -1,3 +1,7 @@
 .pytest_cache
 .DS_Store
 **/.ipynb_checkpoints
+ensemble_store
+mock_data
+data
+__pycache__

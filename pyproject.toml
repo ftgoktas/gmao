@@ -12,15 +12,18 @@ description = "Tools for processing cubed-sphere data."
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    { name="Sabin Adhikari", email="sbn.adh@gmail.com" }
+    { name="Sabin Adhikari", email="sbn.adh@gmail.com" },
+    { name = "Furkan Goktas", email = "ftgoktas@gmail.com" }
 ]
 dependencies = [
     "xarray",
     "numpy",
     "matplotlib",
     "cartopy",
-    "scipy"
+    "scipy",
+    "dask",
+    "icechunk"
 ]
 
 [project.urls]
-Homepage = "https://github.com/sabin413/m21ctools"
+Homepage = "https://github.com/ftgoktas/m21ctools"

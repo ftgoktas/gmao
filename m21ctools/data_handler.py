@@ -9,10 +9,17 @@ and visualize 2D cubed-sphere data from NetCDF files.
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import cartopy.crs as ccrs
 from scipy.interpolate import griddata
-
+import tarfile
+from datetime import datetime, timedelta
+import multiprocessing
+import icechunk
+from icechunk.xarray import to_icechunk
 import warnings
+import os
+
 warnings.filterwarnings("ignore")
 
 class CubedSphereData:
@@ -132,19 +139,6 @@ class CubedSphereData:
 
 # === Ensemble Monitoring & Icechunk Integration ===
 
-import tarfile
-import xarray as xr
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from datetime import datetime, timedelta
-import multiprocessing
-import icechunk
-from icechunk.xarray import to_icechunk
-import os
-import time
-
-
 def get_target_file(date_in_tar):
 
     #For now DO include spinup year  
@@ -163,7 +157,6 @@ def get_target_file(date_in_tar):
     var_file_prefix = f"{expid}.bkg.eta"
     tar_file_prefix = f"{expid}.atmens_stat"
     
-    # tar_file_template = f"mock_data/{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
     tar_file_template = f"../data/{strm}/Y%Y/M%m/{tar_file_prefix}.%Y%m%d_%Hz.tar"
     
     parentdir = date_in_tar.strftime(f"{tar_file_prefix}.%Y%m%d_%Hz")
@@ -194,7 +187,6 @@ def read_netcdf_from_tar_dask(tar_file, date_in_tar, target_file_name):
         return None
 
 
-# TODO: make faster, SEE HOW IT'S BEING CALLED
 def process_tar_file_2d3d(tar_file, date_in_tar, target_file_name, var3d_list, var2d_list):
     """
     Process a single tar file and return the lat-lon average for 3D variables,
@@ -226,16 +218,6 @@ def process_tar_file_2d3d(tar_file, date_in_tar, target_file_name, var3d_list, v
 def parallel_process_files_2d3d(start_date, end_date, var3d_list, var2d_list, skip_times=None, num_workers=30):
     current_date = start_date
     tar_files = []
-
-    # while current_date <= end_date:
-    #     if skip_times and np.datetime64(current_date + timedelta(hours=3)) in skip_times:
-    #         current_date += timedelta(hours=6)
-    #         continue
-
-    #     tar_file_template, target_file_name = get_target_file(current_date)
-    #     tar_file_path = current_date.strftime(tar_file_template)
-    #     tar_files.append((tar_file_path, current_date, target_file_name))
-    #     current_date += timedelta(hours=6)
 
     while current_date <= end_date:
         target_dt = current_date + timedelta(hours=3)
@@ -325,12 +307,6 @@ def plot_hovmoeller_3d(latlon_avg: xr.DataArray, var):
     # Adjust layout to prevent label cutoff
     plt.tight_layout()
     
-#    plt.yscale('log')
-
-#    Fix the x-axis to show readable time labels
-#    plt.gca().xaxis.set_major_locator(mdates.MonthLocator())  
-#    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  
-#    plt.gcf().autofmt_xdate()  
     plt.gca().invert_yaxis()
     
     plt.savefig(f'../plots/M21C_EnsSpread_hovm_{var}_{datetime.now().year}.png')
@@ -418,59 +394,3 @@ def get_existing_times(repo, var_name):
     except FileNotFoundError:
         # Happens if no data has been written yet
         return set()
-
-
-# if __name__ == '__main__':
-#     # Setting the time range to process
-#     # works with generate_mock_1.py
-#     # start_date = datetime(2010, 1, 1, 0) 
-#     # end_date = datetime(2010, 1, 2, 0) # next 24 hours (5 steps if 6-hourly)
-#     start_date = datetime(2018, 6, 1, 21)
-#     end_date = datetime(2018, 9, 30, 21)
-
-#     # test first mock generation
-#     # works with generate_mock_1.py
-#     # start_date = datetime(2010, 1, 2, 12)  # starts from where previous test ended
-#     # end_date = datetime(2010, 1, 3, 12)    
-
-#     # test second mock generation
-#     # works with generate_mock_2.py
-#     # start_date = datetime(2010, 1, 4, 0)
-#     # end_date = datetime(2010, 1, 5, 0)
-
-#     var3d_list, var2d_list = get_variables()
-#     var3d_list = ['u']
-#     var2d_list = ['ps']
-
-#     # Initialize Icechunk storage and repository
-#     repo_path = "ensemble_store"
-#     storage = icechunk.local_filesystem_storage(repo_path)
-
-
-#     # Open the existing repository; if it doesn't exist, create a new one
-#     repo = icechunk.Repository.open_or_create(storage)
-
-#     # Get already processed timestamps to skip
-#     existing_times = get_existing_times(repo, 'u')  # any var is fine — 'u' is good
-
-
-#     # Process new data only
-#     combined_averages = parallel_process_files_2d3d(
-#         start_date, end_date, 
-#         var3d_list, var2d_list, 
-#         skip_times=existing_times, 
-#         num_workers=50
-#     )
-
-#     if not combined_averages:
-        
-#     else:
-#         commit_message = f"Processed data from {start_date} to {end_date}"
-#         save_to_icechunk(repo, combined_averages, commit_message)
-
-#         # Load full data and plot
-#         u_data = load_from_icechunk(repo, 'u')
-#         ps_data = load_from_icechunk(repo, 'ps')
-    
-#         plot_hovmoeller_3d(u_data, var='u')
-#         plot_hovmoeller_2d(ps_data, var='ps')

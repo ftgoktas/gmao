@@ -6,13 +6,6 @@ import numpy as np
 import xarray as xr
 import m21ctools.data_handler as m21c
 
-# @pytest.fixture
-# def test_dates():
-#     return {
-#         'start': datetime(2010, 1, 4, 0),
-#         'end': datetime(2010, 1, 5, 0)
-#     }
-
 @pytest.fixture
 def test_repo():
     repo_path = "test_ensemble_store"
@@ -38,28 +31,6 @@ def test_get_target_file():
     assert isinstance(target_file, str)
     assert '.tar' in tar_template
     assert '.nc4' in target_file
-
-# def test_existing_times(test_repo):
-#     # Test with empty repo first
-#     times = m21c.get_existing_times(test_repo, 'u')
-#     assert isinstance(times, list)
-#     assert len(times) == 0
-
-# def test_parallel_process_files(test_dates, test_repo):
-#     var3d_list = ['u']
-#     var2d_list = ['ps']
-    
-#     combined_averages = m21c.parallel_process_files_2d3d(
-#         test_dates['start'],
-#         test_dates['end'],
-#         var3d_list,
-#         var2d_list,
-#         skip_times=None,
-#         num_workers=2
-#     )
-    
-#     # Even if no data is found, function should return a dict
-#     assert isinstance(combined_averages, dict)
 
 def test_save_and_load_icechunk(test_repo):
     # Create sample data

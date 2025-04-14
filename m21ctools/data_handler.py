@@ -52,25 +52,30 @@ class CubedSphereData:
         
     # Load data
     def load_data(self):
-        """Reads the NetCDF file and extracts data (lats, lons, and a user asigned
-        variable at a give time and level), handling duplicate 'anchor' dimensions."""
-        with xr.open_dataset(self.file_path, engine="h5netcdf") as ds:
-            # Rename duplicate dimensions as the 'anchor' variable have duplicate dimensions - (nf, ncontact, ncontact)
-            self.raw_data = ds.copy()
-            anchor = ds['anchor']
-            anchor_corrected = xr.DataArray(data=anchor.values, dims=('nf', 'ncontact1', 'ncontact2'), attrs=anchor.attrs)
-            ds['anchor'] = anchor_corrected
+        """Reads NetCDF file and extracts data (lats, lons, and a user asigned
+        variable at a given time and level), handling duplicate 'anchor' dimensions."""
+        try:
+            with xr.open_dataset(self.file_path, engine="h5netcdf") as ds:
+                # Rename duplicate dimensions as the 'anchor' variable have duplicate dimensions - (nf, ncontact, ncontact)
+                self.raw_data = ds.copy()
+                anchor = ds['anchor']
+                anchor_corrected = xr.DataArray(data=anchor.values, dims=('nf', 'ncontact1', 'ncontact2'), attrs=anchor.attrs)
+                ds['anchor'] = anchor_corrected
 
-            self.raw_data_cleaned = ds
-            self.lats = ds["lats"].values
-            self.lons = ds["lons"].values
-            self.data = ds[self.variable].isel(time=self.time, lev=self.lev).values
-
+                self.raw_data_cleaned = ds
+                self.lats = ds["lats"].values
+                self.lons = ds["lons"].values
+                self.data = ds[self.variable].isel(time=self.time, lev=self.lev).values
+        
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found at {self.file_path}")
+            
         # Adjust longitudes
         self.lons = self.adjust_longitudes(self.lons)
 
         # Aggregate data from the cubed sphere
         self.all_lats, self.all_lons, self.all_data = self.aggregate_data()
+            
 
     @staticmethod
     def adjust_longitudes(lons):
